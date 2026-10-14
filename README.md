@@ -207,8 +207,8 @@ Pensado para Windows, que es donde se desarrolló. Al final hay los equivalentes
 ### 4.2 Descargar el proyecto
 
 ```bash
-git clone https://github.com/SGil14/Chomusuke_cloud.git
-cd Chomusuke_cloud
+git clone https://github.com/SGil14/Cumulonimbus.git
+cd Cumulonimbus
 ```
 
 ### 4.3 Crear la base de datos (una sola vez)
@@ -522,7 +522,7 @@ Cada diseño es un archivo CSS autocontenido en `frontend/src/disenos/` más su 
 ## 11. Estructura del proyecto
 
 ```
-Chomusuke_cloud/
+Cumulonimbus/
 ├── backend/
 │   ├── app/
 │   │   ├── main.py                # Arranque de FastAPI; sirve también el frontend compilado
