@@ -306,6 +306,34 @@ python3 -m venv .venv
 
 (Y `npm install && npm run build` en `frontend/`.) Estos pasos no se han probado en Linux ni en macOS.
 
+### 4.11 Con Docker (alternativa)
+
+Si prefieres no instalar Python, Node ni PostgreSQL, el proyecto trae un `Dockerfile` y un `docker-compose.yml` que levantan la app y su base de datos juntas. Solo necesitas [Docker](https://www.docker.com/products/docker-desktop/) instalado.
+
+1. En el archivo `.env` de la raíz agrega una contraseña para la base (solo letras y números):
+
+   ```ini
+   POSTGRES_PASSWORD=unaClaveSegura123
+   ```
+
+2. Construye y arranca todo:
+
+   ```bash
+   docker compose up --build
+   ```
+
+3. Abre http://localhost:8000.
+
+Qué hace por ti:
+
+- Compila el frontend y lo mete en la misma imagen que el backend (build en dos etapas).
+- Crea un contenedor de PostgreSQL con su volumen `datos_postgres`: el histórico sobrevive a reinicios y a `docker compose down`. Para borrarlo también: `docker compose down -v`.
+- Al arrancar, la app aplica las migraciones (`alembic upgrade head`) y espera a que la base esté lista.
+- La base de datos no se publica fuera de Docker; solo se expone el puerto 8000 de la app.
+- La imagen no lleva tu `.env` ni la carpeta de respaldo (ver `.dockerignore`) y no corre como administrador.
+
+> **Estado:** los archivos Docker se escribieron sin poder construir la imagen en el equipo de desarrollo (no tenía Docker instalado). Sí se comprobó por separado el comando de arranque, el chequeo de salud y la consistencia de `npm ci`, pero **la primera construcción real está pendiente**: si falla algo, es el primer lugar donde mirar. El contenedor de la base usa PostgreSQL 17; el desarrollo local se hizo con la 18.
+
 ---
 
 ## 5. Cómo usar la app
@@ -546,6 +574,9 @@ Cumulonimbus/
 │       ├── lib/                   # API, formatos, geometría, lluvia animada, filtro del radar
 │       └── disenos/               # Un CSS por diseño + paletas del mapa
 ├── docs/img/                      # Capturas de este README
+├── Dockerfile                     # Imagen única: backend + frontend compilado
+├── docker-compose.yml             # La app y su PostgreSQL juntos
+├── .dockerignore
 ├── Abrir Cumulonimbus.bat            # Un clic: compila el frontend si falta y abre la app
 ├── .env.example                   # Plantilla de configuración
 └── README.md
@@ -568,37 +599,49 @@ Hay **56 pruebas** que cubren las reglas de intensidad y acumulado, la lectura d
 
 ## 13. Despliegue en la nube
 
-El proyecto está pensado para desplegarse como **un solo servicio**: el backend de FastAPI sirve la API y también el frontend ya compilado, y se conecta a un PostgreSQL. No hay un Dockerfile todavía (ver [hoja de ruta](#17-hoja-de-ruta)) y **el despliegue en la nube aún no se ha probado**; estos son los pasos que deberían servir en cualquier proveedor que ejecute Python:
+El proyecto está pensado para desplegarse como **un solo servicio**: el backend de FastAPI sirve la API y también el frontend ya compilado, y se conecta a un PostgreSQL. Hay un `Dockerfile` listo, pero **el despliegue en la nube aún no se ha probado** (ni la imagen se ha construido todavía; ver el aviso de la sección 4.11).
 
-**1. Base de datos.** Crea un PostgreSQL gestionado (la mayoría de proveedores tiene plan gratuito) y copia su cadena de conexión. Conviértela al formato del driver: `postgresql+psycopg://usuario:clave@host:5432/base`.
+### Opción A: con el Dockerfile (recomendada)
 
-**2. Variables de entorno** en el servicio (no subas el `.env`):
+Casi todos los proveedores aceptan desplegar desde un `Dockerfile` en la raíz del repositorio. Lo que debes configurar:
 
-| Variable | Valor |
+| Qué | Valor |
 |---|---|
-| `DATABASE_URL` | la cadena de conexión del paso anterior |
+| Origen | este repositorio de GitHub (el proveedor detecta el `Dockerfile`) |
+| Base de datos | un PostgreSQL gestionado del mismo proveedor |
+| `DATABASE_URL` | su cadena de conexión, con el formato `postgresql+psycopg://usuario:clave@host:5432/base` |
 | `RECOLECTOR_ACTIVO` | `true` en **una sola** instancia (ver abajo) |
+| Puerto | el contenedor escucha en la variable `PORT` si el proveedor la entrega, y en el 8000 si no |
 
-**3. Comando de construcción** (build):
+No hace falta comando de arranque propio: el `Dockerfile` ya aplica las migraciones y levanta la API (`alembic upgrade head && uvicorn ... --host 0.0.0.0 --port $PORT`).
+
+### Opción B: sin Docker
+
+Para un proveedor que ejecute Python directamente:
+
+**Comando de construcción:**
 
 ```bash
 pip install -r backend/requirements.txt && cd frontend && npm ci && npm run build
 ```
 
-**4. Comando de arranque:**
+**Comando de arranque:**
 
 ```bash
 cd backend && alembic upgrade head && python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT
 ```
 
-El puerto lo suele entregar el proveedor en la variable `PORT`. Si en tu plataforma el directorio de trabajo es distinto, ajusta las rutas.
+### Qué reemplaza a `iniciar.bat` en la nube
 
-**Cosas que debes tener en cuenta:**
+`iniciar.bat` es solo para Windows y para desarrollo (usa el entorno virtual local, `--reload` y el puerto fijo 8000). En la nube lo sustituye el `CMD` del `Dockerfile` o el comando de arranque de la opción B; ambos hacen lo mismo en Linux: migrar la base y levantar la API escuchando en todas las interfaces.
+
+### Cosas que debes tener en cuenta
 
 - **Una sola instancia con el recolector.** Si escalas a varias réplicas, solo una debe tener `RECOLECTOR_ACTIVO=true`. Aun así no se duplican datos (la restricción única lo impide), pero se haría trabajo repetido.
 - **Planes gratuitos que «duermen».** Algunos proveedores apagan el servicio tras un rato sin visitas. Mientras está apagado **no se guarda histórico**. Si el histórico te importa, necesitas un plan que no duerma o un servicio externo que lo despierte cada pocos minutos.
-- **Servicios públicos con límites.** Nominatim y Valhalla públicos son para uso moderado (Nominatim pide máximo 1 consulta por segundo y un `User-Agent` identificable, que la app ya envía). Para mucho tráfico conviene alojar tu propia instancia (`RUTA_URL`) o usar un geocodificador con clave (`IDECA_API_KEY`).
+- **Servicios públicos con límites.** Nominatim y Valhalla públicos son para uso moderado (Nominatim pide máximo 1 consulta por segundo y un `User-Agent` identificable, que la app ya envía). El recolector **solo** consulta al SAB; Nominatim y Valhalla solo se usan cuando alguien busca un lugar o calcula una ruta. Para mucho tráfico conviene alojar tu propia instancia (`RUTA_URL`) o usar un geocodificador con clave (`IDECA_API_KEY`).
 - **El SAB debe ser accesible desde el servidor.** Si el proveedor bloquea salidas a internet o el SAB bloquea la IP del servidor, la app mostrará un error 502.
+- **Cualquiera con el enlace podrá usarla.** La app no tiene usuarios ni contraseña.
 
 ---
 
@@ -666,4 +709,5 @@ Aún no se ha definido una licencia para el código.
 | ⏳ | Descarga del histórico en CSV |
 | ⏳ | Recolector cada 2 minutos (el SAB actualiza cada ~2) |
 | ⏳ | Datos históricos del IDEAM |
-| ⏳ | Docker y guía de despliegue en un proveedor concreto |
+| 🟡 | Docker: archivos escritos, falta la primera construcción real |
+| ⏳ | Guía de despliegue en un proveedor concreto |
