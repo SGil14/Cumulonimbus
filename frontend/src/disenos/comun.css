@@ -192,3 +192,13 @@
 @media (prefers-reduced-motion: reduce) {
   .hist-fondo, .hist, .ruta-card { animation: none; }
 }
+
+/* ---------- Barra superior en pantallas angostas ----------
+   El nombre es largo: en el celular se oculta el «·BOG» y el icono de la marca y se achican los botones para que quepan
+   todos (hasta 360 px de ancho). */
+@media (max-width: 560px) {
+  .barra .marca em, .barra .marca svg { display: none; }
+  .barra .marca { font-size: 13px; letter-spacing: 0; padding: 7px 10px; gap: 0; white-space: nowrap; }
+  .barra .barra__acciones { gap: 5px; }
+  .barra .boton, .barra .boton--icono { width: 36px; height: 36px; }
+}

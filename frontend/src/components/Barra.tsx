@@ -25,7 +25,7 @@ export function Barra({
           <circle cx="16" cy="16" r="8" className="marca__anillo" />
           <circle cx="16" cy="16" r="13" className="marca__anillo marca__anillo--2" />
         </svg>
-        <span>Chomusuke<em>·BOG</em></span>
+        <span>Cumulonimbus<em>·BOG</em></span>
       </h1>
       <div className="barra__acciones">
         {radarDisponible && (

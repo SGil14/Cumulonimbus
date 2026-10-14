@@ -1,8 +1,8 @@
-# Chomusuke
+# Cumulonimbus
 
-**¿Está lloviendo donde voy a estar?** Chomusuke consulta en vivo los pluviómetros del SAB / IDIGER de Bogotá y te lo dice en una frase: dónde llueve ahora, si llueve cerca de un destino, si te va a mojar en tu ruta y cuánto ha llovido antes. Todo sobre un mapa, en el celular o en el computador, y con un histórico propio guardado en PostgreSQL para analizar la lluvia con el tiempo.
+**¿Está lloviendo donde voy a estar?** Cumulonimbus consulta en vivo los pluviómetros del SAB / IDIGER de Bogotá y te lo dice en una frase: dónde llueve ahora, si llueve cerca de un destino, si te va a mojar en tu ruta y cuánto ha llovido antes. Todo sobre un mapa, en el celular o en el computador, y con un histórico propio guardado en PostgreSQL para analizar la lluvia con el tiempo.
 
-![Chomusuke con el diseño Clima, tema claro](docs/img/01-diseno-clima-claro.png)
+![Cumulonimbus con el diseño Clima, tema claro](docs/img/01-diseno-clima-claro.png)
 
 > **Sobre las capturas de este documento.** Cuando escribí esta guía casi no llovía en Bogotá, así que las imágenes que muestran lluvia (zonas de color, radar encendido, el panel «7 de 71») usan **estaciones y ecos de radar simulados** para poder enseñar cómo se ve. Las imágenes del buscador, la ruta, el historial y la documentación de la API usan **datos reales** del momento de la captura.
 
@@ -32,7 +32,7 @@
 
 ## 1. ¿Para qué sirve?
 
-El IDIGER (Instituto Distrital de Gestión de Riesgos y Cambio Climático) mantiene en Bogotá una red de **71 pluviómetros** que reportan cuánta lluvia cae, cada pocos minutos. Esos datos son públicos en la página del SAB, pero están pensados para consultarse estación por estación. Chomusuke los convierte en respuestas:
+El IDIGER (Instituto Distrital de Gestión de Riesgos y Cambio Climático) mantiene en Bogotá una red de **71 pluviómetros** que reportan cuánta lluvia cae, cada pocos minutos. Esos datos son públicos en la página del SAB, pero están pensados para consultarse estación por estación. Cumulonimbus los convierte en respuestas:
 
 | Pregunta | Qué responde la app |
 |---|---|
@@ -122,7 +122,7 @@ Hay que entenderlo bien, porque **el radar mide lluvia en el aire, no en el suel
 
 El botón **«Diseño»** cambia entre cinco estilos visuales y la app recuerda el último. El botón de la luna/sol cambia entre tema claro y oscuro. Funciona igual en computador y en celular: en el celular el panel se vuelve una hoja que sube desde abajo.
 
-![Chomusuke en el celular](docs/img/12-celular.png)
+![Cumulonimbus en el celular](docs/img/12-celular.png)
 
 Los cinco diseños están descritos en la [sección 10](#10-los-cinco-diseños).
 
@@ -260,7 +260,7 @@ Esto genera `frontend/dist`, que el backend sirve solo. (Si usas el acceso direc
 
 ### 4.7 Arrancar
 
-**Forma fácil (Windows):** doble clic en **`Abrir Chomusuke.bat`**. Compila el frontend si falta, abre el navegador en http://localhost:8000 y levanta el backend (aplicando antes las migraciones de la base de datos).
+**Forma fácil (Windows):** doble clic en **`Abrir Cumulonimbus.bat`**. Compila el frontend si falta, abre el navegador en http://localhost:8000 y levanta el backend (aplicando antes las migraciones de la base de datos).
 
 **Forma manual:**
 
@@ -546,7 +546,7 @@ Chomusuke_cloud/
 │       ├── lib/                   # API, formatos, geometría, lluvia animada, filtro del radar
 │       └── disenos/               # Un CSS por diseño + paletas del mapa
 ├── docs/img/                      # Capturas de este README
-├── Abrir Chomusuke.bat            # Un clic: compila el frontend si falta y abre la app
+├── Abrir Cumulonimbus.bat            # Un clic: compila el frontend si falta y abre la app
 ├── .env.example                   # Plantilla de configuración
 └── README.md
 ```
@@ -611,7 +611,7 @@ Para no engañarte con lo que muestra la app:
 - **El radar ve lluvia en el aire.** Puede mostrar lluvia que no llega al suelo, y sus colores no están calibrados contra los pluviómetros: la equivalencia entre color e intensidad es orientativa.
 - **Las zonas de color son una estimación visual** alrededor de cada estación; no hay medición entre estaciones.
 - **La ruta usa la lluvia de ahora,** no un pronóstico de lo que pasará cuando llegues.
-- **No es un pronóstico.** Chomusuke dice lo que está pasando y lo que pasó, no lo que va a pasar.
+- **No es un pronóstico.** Cumulonimbus dice lo que está pasando y lo que pasó, no lo que va a pasar.
 - **El histórico empieza cuando el servidor se enciende por primera vez.** No hay datos anteriores (importar datos históricos del IDEAM está en la hoja de ruta).
 
 ---
@@ -620,10 +620,10 @@ Para no engañarte con lo que muestra la app:
 
 | Síntoma | Causa probable y solución |
 |---|---|
-| `Abrir Chomusuke.bat` abre una página que no carga | El servidor tarda unos segundos en arrancar: recarga la página. Si sigue, mira la ventana negra por errores. |
+| `Abrir Cumulonimbus.bat` abre una página que no carga | El servidor tarda unos segundos en arrancar: recarga la página. Si sigue, mira la ventana negra por errores. |
 | Error de conexión a la base (`password authentication failed`, `connection refused`) | PostgreSQL apagado, o el `DATABASE_URL` del `.env` no coincide con tu usuario, contraseña, puerto o nombre de base. |
 | `/api/health` dice que la base falla | Igual que el anterior; verifica que `psql` entra con esos mismos datos. |
-| Veo una versión vieja de la app | Hay un servidor antiguo ocupando el puerto 8000. Cierra su ventana, abre `Abrir Chomusuke.bat` y recarga con **Ctrl+F5**. |
+| Veo una versión vieja de la app | Hay un servidor antiguo ocupando el puerto 8000. Cierra su ventana, abre `Abrir Cumulonimbus.bat` y recarga con **Ctrl+F5**. |
 | El historial dice «Aún hay pocos datos» | Es normal al empezar: el histórico solo se llena mientras el servidor está encendido. |
 | La app no registra la lluvia que estoy viendo | Mira [Límites que debes conocer](#14-límites-que-debes-conocer): la estación más cercana puede estar lejos o no haber registrado todavía una llovizna fina. Prueba con «Actualizar» y el radar. |
 | Error 502 «El SAB no está respondiendo» | El servicio del SAB está caído o lento. Intenta de nuevo en unos minutos. |

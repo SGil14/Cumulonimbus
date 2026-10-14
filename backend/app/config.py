@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     # Geocodificación (buscador de destinos)
     ideca_api_key: str = ""  # gratuita, la entrega IDECA; sin ella se usa solo Nominatim
     ideca_url: str = "https://catalogopmb.catastrobogota.gov.co/PMBWeb/web/api"
-    nominatim_user_agent: str = "chomusuke/0.1 (consulta de lluvia en Bogota)"
+    nominatim_user_agent: str = "cumulonimbus/0.1 (consulta de lluvia en Bogota)"
     geocoding_timeout_segundos: float = 15
 
     # Rutas (Valhalla, servicio gratuito de OpenStreetMap)

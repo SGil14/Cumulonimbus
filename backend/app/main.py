@@ -1,4 +1,4 @@
-"""Punto de entrada de la API de Chomusuke."""
+"""Punto de entrada de la API de Cumulonimbus."""
 
 import logging
 from contextlib import asynccontextmanager
@@ -33,7 +33,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Chomusuke",
+    title="Cumulonimbus",
     description="Lluvia en tiempo real en Bogotá a partir de las estaciones del SAB (IDIGER).",
     version="0.1.0",
     lifespan=lifespan,
