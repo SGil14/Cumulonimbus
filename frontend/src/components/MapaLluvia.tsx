@@ -42,6 +42,11 @@ const RADIO_ZONA_M = { ligera: 2500, moderada: 3500, fuerte: 4500, muy_fuerte: 5
 const PX_POR_METRO_Z8 = 256 / 78016;
 const PX_POR_METRO_Z16 = 65536 / 78016;
 
+/** La zona se desvanece al acercar el mapa: a zoom de calle un halo de varios kilómetros taparía todo. */
+function opacidadZona(base: number) {
+  return ["interpolate", ["linear"], ["zoom"], 10.5, base, 12.5, base * 0.45, 14.5, base * 0.12] as never;
+}
+
 function colorZona(tema: "claro" | "oscuro") {
   const c = COLOR_ZONA[tema];
   return ["match", ["get", "intensidad"], "muy_fuerte", c.muy_fuerte, "fuerte", c.fuerte, "moderada", c.moderada, c.ligera] as never;
@@ -141,7 +146,7 @@ export function MapaLluvia({ estaciones, limites, resumen, paleta, margen, radar
           "circle-radius": ["interpolate", ["exponential", 2], ["zoom"],
             8, ["*", ["get", "radio"], PX_POR_METRO_Z8], 16, ["*", ["get", "radio"], PX_POR_METRO_Z16]],
           "circle-blur": 0.7,
-          "circle-opacity": 0.6,
+          "circle-opacity": opacidadZona(0.6),
           "circle-pitch-alignment": "map",
         },
       });
@@ -208,7 +213,7 @@ export function MapaLluvia({ estaciones, limites, resumen, paleta, margen, radar
         })),
     });
     mapa.setPaintProperty("zonas-lluvia", "circle-color", colorZona(tema));
-    mapa.setPaintProperty("zonas-lluvia", "circle-opacity", tema === "claro" ? 0.7 : 0.6);
+    mapa.setPaintProperty("zonas-lluvia", "circle-opacity", opacidadZona(tema === "claro" ? 0.7 : 0.6));
   }, [estaciones, listo, tema]);
 
   // --- Colores según el diseño y el tema ---
