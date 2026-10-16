@@ -1,6 +1,7 @@
 """Ruta para el atajo de iPhone: una tarjeta HTML (se abre en Safari) o un texto con emojis (se muestra en el atajo)."""
 
 import re
+from datetime import timedelta
 from html import escape
 from typing import Literal
 
@@ -8,10 +9,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import HTMLResponse, PlainTextResponse
 from sqlalchemy.orm import Session
 
+from app.api.routes.atajo_mapa import mapa_ruta_svg
 from app.api.routes.ruta import ruta as calcular_ruta
+from app.core.tiempo import ahora_bogota
 from app.db.session import get_db
 from app.models.ruta import Modo, RutaRespuesta, TramoRuta
-from app.models.schemas import Intensidad, UbicacionDestino
+from app.models.schemas import Estacion, Intensidad, UbicacionDestino
+from app.services import estaciones_service
 
 router = APIRouter(prefix="/api", tags=["atajo"])
 
@@ -128,10 +132,17 @@ li b { display:block; font-size:15px; }
 li span { color:var(--suave); font-size:13.5px; }
 .nota { color:var(--suave); font-size:13px; margin:14px 0 0; }
 .aviso { background:rgba(255,160,0,.14); border-radius:12px; padding:10px 12px; font-size:14px; margin-top:12px; }
+.mapa { border-radius:16px; overflow:hidden; margin:0 0 8px; line-height:0; border:1px solid var(--linea); }
+.mapa-svg { display:block; height:auto; }
+@media (prefers-color-scheme: dark) { .teselas { filter: invert(1) hue-rotate(180deg) brightness(.92) contrast(.9); } }
+.leyenda { display:flex; flex-wrap:wrap; gap:6px 14px; color:var(--suave); font-size:12.5px; margin:0 0 14px; }
+.leyenda span::before { content:""; display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:5px; vertical-align:-1px; background:var(--c); }
+.chips { display:flex; flex-wrap:wrap; gap:8px; margin:0 0 14px; }
+.chips span { background:var(--fondo); border-radius:999px; padding:6px 12px; font-size:13.5px; font-weight:600; }
 """
 
 
-def tarjeta_html(r: RutaRespuesta, origen: str, destino: str, hora: str) -> str:
+def tarjeta_html(r: RutaRespuesta, origen: str, destino: str, hora: str, mapa: str = "", llegada: str = "") -> str:
     """La ruta como una tarjeta HTML; todo texto que viene de fuera se escapa."""
     if not r.encontrado:
         cuerpo = f'<div class="veredicto" style="background:#d9534f"><b>No pude calcular la ruta</b><small>{escape(r.mensaje)}</small></div>'
@@ -153,11 +164,26 @@ def tarjeta_html(r: RutaRespuesta, origen: str, destino: str, hora: str) -> str:
         f'<div class="aviso">⚪ {r.porcentaje_sin_datos} % del trayecto no tiene datos (la estación más cercana queda lejos o no reporta).</div>'
         if r.porcentaje_sin_datos else ""
     )
+    usadas = len({t.estacion for t in r.tramos if t.estacion})
+    leyenda = (
+        '<div class="leyenda">'
+        f'<span style="--c:{ESTADOS["seco"][2]}">Seco</span><span style="--c:{ESTADOS["lluvia"][2]}">Lluvia</span>'
+        f'<span style="--c:{ESTADOS["sin_datos"][2]}">Sin datos</span><span style="--c:#4b5870">Estación</span></div>'
+        if mapa else ""
+    )
+    chips = (
+        '<div class="chips">'
+        f"<span>⏱ {escape(_duracion(r.duracion_min))}</span><span>📏 {escape(_num(r.distancia_km))} km</span>"
+        + (f"<span>🏁 Llegas ≈ {escape(llegada)}</span>" if llegada else "")
+        + f"<span>📡 {usadas} {'estación' if usadas == 1 else 'estaciones'}</span></div>"
+    )
+    bloque_mapa = f'<div class="mapa">{mapa}</div>{leyenda}{chips}' if mapa else ""
     cuerpo = (
         '<div class="tarjeta">'
         f'<p class="meta">{emoji_modo} {escape(nombre_modo)} · {escape(_num(r.distancia_km))} km · {escape(_duracion(r.duracion_min))}</p>'
         f'<p class="trayecto">{escape(_lugar(r.origen, origen))} <span>→</span> {escape(_lugar(r.destino, destino))}</p>'
         f'<div class="veredicto" style="background:{color}"><b>{emoji_v} {escape(titular)}</b><small>{escape(r.resumen)}</small></div>'
+        f"{bloque_mapa}"
         f'<div class="barra">{barra}</div><div class="ejes"><span>Salida</span><span>Llegada</span></div>'
         f"<h2>Tramos</h2><ul>{filas}</ul>{sin_datos}"
         f'<p class="nota">{escape(r.nota)} Datos de los pluviómetros del SAB · {escape(hora)}</p>'
@@ -234,4 +260,12 @@ def atajo_ruta(
     if formato == "texto":
         return PlainTextResponse(texto_ruta(r, origen_texto, destino_texto))
     hora = r.datos_obtenidos_en.strftime("%H:%M") if r.datos_obtenidos_en else ""
-    return HTMLResponse(tarjeta_html(r, origen_texto, destino_texto, hora))
+    mapa, llegada = "", ""
+    if r.encontrado:
+        try:
+            _, estaciones = estaciones_service.obtener_estaciones()
+        except Exception:  # sin estaciones el mapa se dibuja igual, solo con el recorrido
+            estaciones = []
+        mapa = mapa_ruta_svg(r, estaciones)
+        llegada = (ahora_bogota() + timedelta(minutes=r.duracion_min)).strftime("%H:%M")
+    return HTMLResponse(tarjeta_html(r, origen_texto, destino_texto, hora, mapa, llegada))
