@@ -399,6 +399,7 @@ El backend expone una API JSON; el frontend es solo uno de sus clientes. Toda la
 | `GET /api/historial/serie?periodo=&localidad=` | Cuánto llovió en cada intervalo (por hora en `6h` y `24h`, por día en `7d` y `30d`). |
 | `GET /api/historial/ranking?periodo=` | Localidades ordenadas por lo que llovió en el periodo. |
 | `GET /api/historial/destino?lat=&lon=&periodo=` | Cuándo llovió cerca de un punto (las 3 estaciones más cercanas). |
+| `GET /api/atajo?q=` | Una frase en texto plano que dice si llueve en un destino; pensada para el atajo de iPhone (acepta lo mismo que `/api/destino`, incluidas coordenadas `lat,lon`). |
 | `GET /api/radar` | Imagen del radar (PNG transparente en base64) y la zona que cubre. |
 | `GET /api/localidades` | Contorno de las localidades (GeoJSON), usado para dibujar el mapa. |
 
@@ -555,7 +556,7 @@ Cumulonimbus/
 │   ├── app/
 │   │   ├── main.py                # Arranque de FastAPI; sirve también el frontend compilado
 │   │   ├── config.py              # Configuración (.env)
-│   │   ├── api/routes/            # Endpoints: lluvia, destino, mapa, radar, historial, ruta, health
+│   │   ├── api/routes/            # Endpoints: lluvia, destino, atajo, mapa, radar, historial, ruta, health
 │   │   ├── services/              # Lógica: cliente SAB, reglas de lluvia, geocodificación,
 │   │   │                          #         historial, ruta, radar, barrios
 │   │   ├── repositories/          # Lectura y escritura en PostgreSQL
@@ -704,7 +705,7 @@ Aún no se ha definido una licencia para el código.
 | ✅ | Historial por horas y por días |
 | ✅ | Ruta de un lugar a otro |
 | ✅ | Radar con filtro de ecos débiles y zonas de color por estación |
-| ⏳ | Atajo para iPhone (una respuesta en texto plano de «¿llueve aquí?») |
+| 🟡 | Atajo para iPhone: endpoint `/api/atajo` listo y probado en el servidor local; falta probarlo en un iPhone con una URL pública |
 | ⏳ | Avisos de lluvia (correo o Teams) |
 | ⏳ | Descarga del histórico en CSV |
 | ⏳ | Recolector cada 2 minutos (el SAB actualiza cada ~2) |
